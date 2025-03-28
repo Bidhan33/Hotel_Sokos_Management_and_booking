@@ -2,26 +2,27 @@ package fi.haagahelia.sokos.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
+import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+
 import java.util.Date;
 import java.util.function.Function;
 
 @Component
 public class JWT {
 
-    private static final long EXPIRATION_TIME = 1000 * 60 * 24 * 7; // 7 days
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24 * 7; // 7 days
 
     private final SecretKey secretKey;
 
-    public JWT(@Value("${jwt.secret}") String secretString) {
-        // Generate a secure key using the secret string
-        this.secretKey = Keys.hmacShaKeyFor(secretString.getBytes(StandardCharsets.UTF_8));
+    public JWT() {
+        String secretString = "843567893696976453275974432697R634976R738467TR678T34865R6834R8763T478378637664538745673865783678548735687R3"; // Example key
+        byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
+        this.secretKey = new SecretKeySpec(keyBytes, "HmacSHA256");
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -29,7 +30,7 @@ public class JWT {
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(secretKey)
+                .signWith(secretKey, Jwts.SIG.HS256)
                 .compact();
     }
 
@@ -39,9 +40,9 @@ public class JWT {
 
     private <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {
         Claims claims = Jwts.parser()
-                .verifyWith(secretKey)
+                .verifyWith(secretKey) // New method in JJWT 0.12.5
                 .build()
-                .parseSignedClaims(token)
+                .parseSignedClaims(token) // Replaces deprecated parseClaimsJws(token)
                 .getPayload();
         return claimsResolver.apply(claims);
     }
