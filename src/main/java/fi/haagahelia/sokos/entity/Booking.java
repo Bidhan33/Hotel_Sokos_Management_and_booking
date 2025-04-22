@@ -11,7 +11,6 @@ import java.time.LocalDate;
 
 @Getter
 @Setter
-@ToString
 @Entity
 @Table(name = "bookings")
 public class Booking {
@@ -24,6 +23,7 @@ public class Booking {
     @Column(nullable = false)
     private LocalDate checkInDate;
 
+    @NotNull(message = "Please provide a check-out date.")
     @Future(message = "Check-out date must be a future date.")
     @Column(nullable = false)
     private LocalDate checkOutDate;
@@ -39,7 +39,7 @@ public class Booking {
     @Column(nullable = false)
     private int totalNumOfGuest;
 
-    @Column(unique = true)
+    @Column(unique = true, nullable = false)
     private String bookingConfirmationCode;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -54,5 +54,18 @@ public class Booking {
     @PreUpdate
     private void updateTotalGuests() {
         this.totalNumOfGuest = this.numOfAdults + this.numOfChildren;
+    }
+
+    @Override
+    public String toString() {
+        return "Booking{" +
+                "id=" + id +
+                ", checkInDate=" + checkInDate +
+                ", checkOutDate=" + checkOutDate +
+                ", numOfAdults=" + numOfAdults +
+                ", numOfChildren=" + numOfChildren +
+                ", totalNumOfGuest=" + totalNumOfGuest +
+                ", bookingConfirmationCode='" + bookingConfirmationCode + '\'' +
+                '}';
     }
 }

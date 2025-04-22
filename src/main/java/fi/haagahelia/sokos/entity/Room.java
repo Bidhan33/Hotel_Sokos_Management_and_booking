@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
@@ -33,7 +34,8 @@ public class Room {
     @Column(nullable = false)
     private BigDecimal roomPrice;
 
-    private String roomPhotoUrl;
+    @Column(name = "room_photo_url")
+    private String roomPhotoUrl; // Store the URL directly in the database
 
     @NotNull(message = "Room description is required.")
     @Size(min = 10, message = "Room description must be at least 10 characters long.")
