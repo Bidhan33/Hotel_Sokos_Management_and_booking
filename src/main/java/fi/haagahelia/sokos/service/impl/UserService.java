@@ -1,4 +1,4 @@
-package fi.haagahelia.sokos.service.impl;
+/* package fi.haagahelia.sokos.service.impl;
 
 import fi.haagahelia.sokos.entity.User;
 import fi.haagahelia.sokos.exception.Exception;
@@ -190,3 +190,4 @@ public class UserService implements IUserService {
         return response;
     }
 }
+    */

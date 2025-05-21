@@ -6,6 +6,11 @@ import fi.haagahelia.sokos.entity.User;
 import fi.haagahelia.sokos.model.BookingModel;
 import fi.haagahelia.sokos.model.RoomModel;
 import fi.haagahelia.sokos.model.UserModel;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 import java.security.SecureRandom;
 import java.util.List;

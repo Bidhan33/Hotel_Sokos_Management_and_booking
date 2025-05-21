@@ -1,10 +1,11 @@
 package fi.haagahelia.sokos.web;
 
+import fi.haagahelia.sokos.exception.Exception;
 import fi.haagahelia.sokos.model.ResponseModel;
-import fi.haagahelia.sokos.service.interfac.IBookingService;
 import fi.haagahelia.sokos.service.interfac.IRoomService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -21,25 +22,26 @@ public class RoomController {
     @Autowired
     private IRoomService roomService;
 
-    @Autowired
-    private IBookingService bookingService;
-
     @PostMapping("/add")
-    @PreAuthorize("hasAuthority('ADMIN')")
+   // @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ResponseModel> addNewRoom(
-            @RequestParam(value = "photo", required = false) MultipartFile photo,
-            @RequestParam(value = "roomType", required = false) String roomType,
-            @RequestParam(value = "roomPrice", required = false) BigDecimal roomPrice,
-            @RequestParam(value = "roomDescription", required = false) String roomDescription
-    ) {
-        if (photo == null || photo.isEmpty() || roomType == null || roomType.isBlank() || roomPrice == null) {
-            ResponseModel response = new ResponseModel();
-            response.setStatusCode(400);
-            response.setMessage("Please provide values for all fields (photo, roomType, roomPrice)");
-            return ResponseEntity.status(response.getStatusCode()).body(response);
+            @RequestParam("photo") MultipartFile photo,
+            @RequestParam("roomType") String roomType,
+            @RequestParam("roomPrice") BigDecimal roomPrice,
+            @RequestParam(value = "roomDescription", required = false) String roomDescription) {
+        
+        try {
+            ResponseModel response = roomService.addNewRoom(photo, roomType, roomPrice, roomDescription);
+            return ResponseEntity
+                    .status(response.getStatusCode())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(response);
+        } catch (Exception e) {
+            ResponseModel errorResponse = new ResponseModel();
+            errorResponse.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        ResponseModel response = roomService.addNewRoom(photo, roomType, roomPrice, roomDescription);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @GetMapping("/all")
@@ -49,14 +51,21 @@ public class RoomController {
     }
 
     @GetMapping("/types")
-    public List<String> getRoomTypes() {
-        return roomService.getAllRoomTypes();
+    public ResponseEntity<List<String>> getRoomTypes() {
+        return ResponseEntity.ok(roomService.getAllRoomTypes());
     }
 
     @GetMapping("/room-by-id/{roomId}")
     public ResponseEntity<ResponseModel> getRoomById(@PathVariable String roomId) {
-        ResponseModel response = roomService.getRoomById(roomId);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
+        try {
+            ResponseModel response = roomService.getRoomById(roomId);
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        } catch (Exception e) {
+            ResponseModel errorResponse = new ResponseModel();
+            errorResponse.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @GetMapping("/all-available-rooms")
@@ -67,36 +76,52 @@ public class RoomController {
 
     @GetMapping("/available-rooms-by-date-and-type")
     public ResponseEntity<ResponseModel> getAvailableRoomsByDateAndType(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkInDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate checkOutDate,
-            @RequestParam(required = false) String roomType
-    ) {
-        if (checkInDate == null || roomType == null || roomType.isBlank() || checkOutDate == null) {
-            ResponseModel response = new ResponseModel();
-            response.setStatusCode(400);
-            response.setMessage("Please provide values for all fields (checkInDate, roomType, checkOutDate)");
+            @RequestParam LocalDate checkInDate,
+            @RequestParam LocalDate checkOutDate,
+            @RequestParam String roomType) {
+        
+        try {
+            ResponseModel response = roomService.getAvailableRoomsByDateAndType(checkInDate, checkOutDate, roomType);
             return ResponseEntity.status(response.getStatusCode()).body(response);
+        } catch (Exception e) {
+            ResponseModel errorResponse = new ResponseModel();
+            errorResponse.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
         }
-        ResponseModel response = roomService.getAvailableRoomsByDateAndType(checkInDate, checkOutDate, roomType);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
     @PutMapping("/update/{roomId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
-    public ResponseEntity<ResponseModel> updateRoom(@PathVariable String roomId,
-                                                   @RequestParam(value = "photo", required = false) MultipartFile photo,
-                                                   @RequestParam(value = "roomType", required = false) String roomType,
-                                                   @RequestParam(value = "roomPrice", required = false) BigDecimal roomPrice,
-                                                   @RequestParam(value = "roomDescription", required = false) String roomDescription
-    ) {
-        ResponseModel response = roomService.updateRoom(roomId, roomDescription, roomType, roomPrice, photo);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
+   // @PreAuthorize("hasAuthority('ADMIN')")
+    public ResponseEntity<ResponseModel> updateRoom(
+            @PathVariable String roomId,
+            @RequestParam(value = "photo", required = false) MultipartFile photo,
+            @RequestParam(value = "roomType", required = false) String roomType,
+            @RequestParam(value = "roomPrice", required = false) BigDecimal roomPrice,
+            @RequestParam(value = "roomDescription", required = false) String roomDescription) {
+        
+        try {
+            ResponseModel response = roomService.updateRoom(roomId, roomDescription, roomType, roomPrice, photo);
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        } catch (Exception e) {
+            ResponseModel errorResponse = new ResponseModel();
+            errorResponse.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 
     @DeleteMapping("/delete/{roomId}")
-    @PreAuthorize("hasAuthority('ADMIN')")
+   // @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ResponseModel> deleteRoom(@PathVariable String roomId) {
-        ResponseModel response = roomService.deleteRoom(roomId);
-        return ResponseEntity.status(response.getStatusCode()).body(response);
+        try {
+            ResponseModel response = roomService.deleteRoom(roomId);
+            return ResponseEntity.status(response.getStatusCode()).body(response);
+        } catch (Exception e) {
+            ResponseModel errorResponse = new ResponseModel();
+            errorResponse.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            errorResponse.setMessage(e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
     }
 }

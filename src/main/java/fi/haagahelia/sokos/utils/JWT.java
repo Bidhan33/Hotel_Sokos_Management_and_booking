@@ -2,15 +2,20 @@ package fi.haagahelia.sokos.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.crypto.SecretKey;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Component
 public class JWT {
@@ -28,6 +33,9 @@ public class JWT {
     public String generateToken(UserDetails userDetails) {
         return Jwts.builder()
                 .subject(userDetails.getUsername())
+                .claim("authorities", userDetails.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.toList()))
                 .issuedAt(new Date(System.currentTimeMillis()))
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(secretKey, Jwts.SIG.HS256)
@@ -36,6 +44,20 @@ public class JWT {
 
     public String extractUsername(String token) {
         return extractClaims(token, Claims::getSubject);
+    }
+
+    public Collection<? extends GrantedAuthority> extractAuthorities(String token) {
+        try {
+            @SuppressWarnings("unchecked")
+            List<String> authorities = extractClaims(token, claims -> 
+                claims.get("authorities", List.class));
+            
+            return authorities != null ? authorities.stream()
+                .map(SimpleGrantedAuthority::new)
+                .collect(Collectors.toList()) : Collections.emptyList();
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
     private <T> T extractClaims(String token, Function<Claims, T> claimsResolver) {

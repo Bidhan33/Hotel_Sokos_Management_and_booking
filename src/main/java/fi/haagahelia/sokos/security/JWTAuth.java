@@ -1,4 +1,4 @@
-package fi.haagahelia.sokos.security;
+/* package fi.haagahelia.sokos.security;
 
 import fi.haagahelia.sokos.service.CustomUserDetailsService;
 import fi.haagahelia.sokos.utils.JWT;
@@ -6,10 +6,8 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -21,44 +19,50 @@ import java.io.IOException;
 @Component
 public class JWTAuth extends OncePerRequestFilter {
 
-    @Autowired
-    private JWT jwtUtils;
+    private final JWT jwtUtils;
+    private final CustomUserDetailsService customUserDetailsService;
 
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
+    public JWTAuth(JWT jwtUtils, CustomUserDetailsService customUserDetailsService) {
+        this.jwtUtils = jwtUtils;
+        this.customUserDetailsService = customUserDetailsService;
+    }
 
     @Override
     protected void doFilterInternal(
-            @NonNull HttpServletRequest request, 
-            @NonNull HttpServletResponse response, 
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
         final String authHeader = request.getHeader("Authorization");
-        final String jwtToken;
-        final String userEmail;
-
-        if (authHeader == null || authHeader.isBlank()) {
+        
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        jwtToken = authHeader.substring(7);
-        userEmail = jwtUtils.extractUsername(jwtToken);
+        try {
+            String jwt = authHeader.substring(7);
+            String username = jwtUtils.extractUsername(jwt);
 
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = customUserDetailsService.loadUserByUsername(userEmail);
-            if (jwtUtils.isValidToken(jwtToken, userDetails)) {
-                SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
-                UsernamePasswordAuthenticationToken token = new UsernamePasswordAuthenticationToken(
-                    userDetails, 
-                    null, 
-                    userDetails.getAuthorities()
-                );
-                token.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                securityContext.setAuthentication(token);
-                SecurityContextHolder.setContext(securityContext);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = customUserDetailsService.loadUserByUsername(username);
+                
+                if (jwtUtils.isValidToken(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                    );
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                }
             }
+        } catch (Exception e) {
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
+            return;
         }
+
         filterChain.doFilter(request, response);
     }
 }
+    */

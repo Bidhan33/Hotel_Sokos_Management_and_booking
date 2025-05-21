@@ -17,7 +17,7 @@ public class BookingController {
 
     // Endpoint to book a room for a user
     @PostMapping("/book-room/{roomId}/{userId}")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+    // @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
     public ResponseEntity<ResponseModel> saveBooking(@PathVariable String roomId,
                                                      @PathVariable String userId,
                                                      @RequestBody Booking bookingRequest) {
@@ -29,7 +29,7 @@ public class BookingController {
 
     // Endpoint to get all bookings (Admin access)
     @GetMapping("/all")
-    @PreAuthorize("hasAuthority('ADMIN')")
+   //  @PreAuthorize("hasAuthority('ADMIN')")
     public ResponseEntity<ResponseModel> getAllBookings() {
         ResponseModel response = bookingService.getAllBookings();
         return ResponseEntity.status(response.getStatusCode()).body(response);
@@ -44,7 +44,7 @@ public class BookingController {
 
     // Endpoint to cancel a booking
     @DeleteMapping("/cancel/{bookingId}")
-    @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
+   //  @PreAuthorize("hasAuthority('ADMIN') or hasAuthority('USER')")
     public ResponseEntity<ResponseModel> cancelBooking(@PathVariable String bookingId) {
         ResponseModel response = bookingService.cancelBooking(bookingId);
         return ResponseEntity.status(response.getStatusCode()).body(response);

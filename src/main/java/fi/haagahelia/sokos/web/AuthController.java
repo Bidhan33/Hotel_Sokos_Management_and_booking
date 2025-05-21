@@ -1,3 +1,4 @@
+/*
 package fi.haagahelia.sokos.web;
 
 import fi.haagahelia.sokos.model.LoginModel;
@@ -27,3 +28,4 @@ public class AuthController {
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 }
+*/

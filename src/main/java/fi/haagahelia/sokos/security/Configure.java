@@ -1,4 +1,4 @@
-package fi.haagahelia.sokos.security;
+/* package fi.haagahelia.sokos.security;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,3 +21,4 @@ public class Configure {
         };
     }
 }
+    */

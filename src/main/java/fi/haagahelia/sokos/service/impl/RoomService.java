@@ -4,12 +4,12 @@ import fi.haagahelia.sokos.entity.Room;
 import fi.haagahelia.sokos.exception.Exception;
 import fi.haagahelia.sokos.model.ResponseModel;
 import fi.haagahelia.sokos.model.RoomModel;
-import fi.haagahelia.sokos.repo.BookingRepository;
 import fi.haagahelia.sokos.repo.RoomRepository;
 import fi.haagahelia.sokos.service.interfac.IRoomService;
 import fi.haagahelia.sokos.utils.Utils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,37 +22,44 @@ public class RoomService implements IRoomService {
 
     @Autowired
     private RoomRepository roomRepository;
-    
-    @Autowired
-    private BookingRepository bookingRepository;
 
     @Override
-    public ResponseModel addNewRoom(MultipartFile photo, String roomType, BigDecimal roomPrice, String description) {
+    public ResponseModel addNewRoom(MultipartFile photo, String roomType, BigDecimal roomPrice, String description) throws Exception {
         ResponseModel response = new ResponseModel();
 
         try {
-            // Assuming the URL is passed directly, no need for file storage service
-            String imageUrl = null;
-            if (photo != null && !photo.isEmpty()) {
-                imageUrl = saveImageUrl(photo); // You can implement this method to directly store image URL
+            // Validate inputs
+            if (photo == null || photo.isEmpty()) {
+                throw new Exception("Room photo is required");
+            }
+            if (roomType == null || roomType.trim().isEmpty()) {
+                throw new Exception("Room type is required");
+            }
+            if (roomPrice == null || roomPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new Exception("Room price must be positive");
             }
 
+            // Process photo (in a real app, you'd upload to storage)
+            String imageUrl = "https://storage.example.com/rooms/" + System.currentTimeMillis() + "-" + photo.getOriginalFilename();
+
+            // Create and save room
             Room room = new Room();
-            room.setRoomPhotoUrl(imageUrl);
             room.setRoomType(roomType);
             room.setRoomPrice(roomPrice);
+            room.setRoomPhotoUrl(imageUrl);
             room.setRoomDescription(description);
 
             Room savedRoom = roomRepository.save(room);
             RoomModel roomModel = Utils.mapRoomEntityToModel(savedRoom);
 
-            response.setStatusCode(200);
+            response.setStatusCode(HttpStatus.OK.value());
             response.setMessage("Room added successfully");
             response.setRoom(roomModel);
 
         } catch (Exception e) {
-            response.setStatusCode(500);
-            response.setMessage("Error adding room: " + e.getMessage());
+            response.setStatusCode(HttpStatus.BAD_REQUEST.value());
+            response.setMessage(e.getMessage());
+            throw e; // Re-throw for controller to handle
         }
 
         return response;
@@ -68,15 +75,12 @@ public class RoomService implements IRoomService {
         ResponseModel response = new ResponseModel();
 
         try {
-            List<Room> roomList = roomRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
-            List<RoomModel> roomModelList = Utils.mapRoomEntityListToModelList(roomList);
-
-            response.setStatusCode(200);
+            List<Room> rooms = roomRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+            response.setStatusCode(HttpStatus.OK.value());
             response.setMessage("Rooms retrieved successfully");
-            response.setRoomList(roomModelList);
-
+            response.setRoomList(Utils.mapRoomEntityListToModelList(rooms));
         } catch (Exception e) {
-            response.setStatusCode(500);
+            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setMessage("Error retrieving rooms: " + e.getMessage());
         }
 
@@ -84,73 +88,68 @@ public class RoomService implements IRoomService {
     }
 
     @Override
-    public ResponseModel deleteRoom(String roomId) {
+    public ResponseModel deleteRoom(String roomId) throws Exception {
         ResponseModel response = new ResponseModel();
 
         try {
-            Long id = Long.valueOf(roomId);
-            roomRepository.findById(id).orElseThrow(() -> new Exception("Room not found"));
-            roomRepository.deleteById(id);
-            response.setStatusCode(200);
-            response.setMessage("Room deleted successfully");
+            Long id = Long.parseLong(roomId);
+            Room room = roomRepository.findById(id)
+                    .orElseThrow(() -> new Exception("Room not found with ID: " + roomId));
 
-        } catch (Exception e) {
-            response.setStatusCode(404);
-            response.setMessage("Error: " + e.getMessage());
+            roomRepository.delete(room);
+            response.setStatusCode(HttpStatus.OK.value());
+            response.setMessage("Room deleted successfully");
+        } catch (NumberFormatException e) {
+            throw new Exception("Invalid room ID format");
         }
 
         return response;
     }
 
     @Override
-    public ResponseModel updateRoom(String roomId, String description, String roomType, BigDecimal roomPrice, MultipartFile photo) {
+    public ResponseModel updateRoom(String roomId, String description, String roomType, BigDecimal roomPrice, MultipartFile photo) throws Exception {
         ResponseModel response = new ResponseModel();
 
         try {
-            Long id = Long.valueOf(roomId);
-            String imageUrl = null;
+            Long id = Long.parseLong(roomId);
+            Room room = roomRepository.findById(id)
+                    .orElseThrow(() -> new Exception("Room not found with ID: " + roomId));
 
-            if (photo != null && !photo.isEmpty()) {
-                imageUrl = saveImageUrl(photo); // Storing image URL instead of uploading to a service
-            }
-
-            Room room = roomRepository.findById(id).orElseThrow(() -> new Exception("Room not found"));
-
+            // Update fields
             if (roomType != null) room.setRoomType(roomType);
             if (roomPrice != null) room.setRoomPrice(roomPrice);
             if (description != null) room.setRoomDescription(description);
-            if (imageUrl != null) room.setRoomPhotoUrl(imageUrl);
+            if (photo != null && !photo.isEmpty()) {
+                room.setRoomPhotoUrl("https://storage.example.com/rooms/" + System.currentTimeMillis() + "-" + photo.getOriginalFilename());
+            }
 
             Room updatedRoom = roomRepository.save(room);
-            RoomModel roomModel = Utils.mapRoomEntityToModel(updatedRoom);
-
-            response.setStatusCode(200);
+            response.setStatusCode(HttpStatus.OK.value());
             response.setMessage("Room updated successfully");
-            response.setRoom(roomModel);
+            response.setRoom(Utils.mapRoomEntityToModel(updatedRoom));
 
-        } catch (Exception e) {
-            response.setStatusCode(404);
-            response.setMessage("Error: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            throw new Exception("Invalid room ID format");
         }
 
         return response;
     }
 
     @Override
-    public ResponseModel getRoomById(String roomId) {
+    public ResponseModel getRoomById(String roomId) throws Exception {
         ResponseModel response = new ResponseModel();
 
         try {
-            Long id = Long.valueOf(roomId);
-            Room room = roomRepository.findById(id).orElseThrow(() -> new Exception("Room not found"));
-            RoomModel roomModel = Utils.mapRoomEntityToModelWithBookings(room);
-            response.setStatusCode(200);
-            response.setMessage("Room found");
-            response.setRoom(roomModel);
+            Long id = Long.parseLong(roomId);
+            Room room = roomRepository.findById(id)
+                    .orElseThrow(() -> new Exception("Room not found with ID: " + roomId));
 
-        } catch (Exception e) {
-            response.setStatusCode(404);
-            response.setMessage("Error: " + e.getMessage());
+            response.setStatusCode(HttpStatus.OK.value());
+            response.setMessage("Room found");
+            response.setRoom(Utils.mapRoomEntityToModelWithBookings(room));
+
+        } catch (NumberFormatException e) {
+            throw new Exception("Invalid room ID format");
         }
 
         return response;
@@ -162,13 +161,11 @@ public class RoomService implements IRoomService {
 
         try {
             List<Room> availableRooms = roomRepository.findAvailableRoomsByDatesAndTypes(checkInDate, checkOutDate, roomType);
-            List<RoomModel> roomModelList = Utils.mapRoomEntityListToModelList(availableRooms);
-            response.setStatusCode(200);
+            response.setStatusCode(HttpStatus.OK.value());
             response.setMessage("Available rooms retrieved successfully");
-            response.setRoomList(roomModelList);
-
+            response.setRoomList(Utils.mapRoomEntityListToModelList(availableRooms));
         } catch (Exception e) {
-            response.setStatusCode(500);
+            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
             response.setMessage("Error finding available rooms: " + e.getMessage());
         }
 
@@ -180,24 +177,15 @@ public class RoomService implements IRoomService {
         ResponseModel response = new ResponseModel();
 
         try {
-            List<Room> roomList = roomRepository.getAllAvailableRooms();
-            List<RoomModel> roomModelList = Utils.mapRoomEntityListToModelList(roomList);
-            response.setStatusCode(200);
+            List<Room> availableRooms = roomRepository.getAllAvailableRooms();
+            response.setStatusCode(HttpStatus.OK.value());
             response.setMessage("Available rooms retrieved successfully");
-            response.setRoomList(roomModelList);
-
+            response.setRoomList(Utils.mapRoomEntityListToModelList(availableRooms));
         } catch (Exception e) {
-            response.setStatusCode(404);
-            response.setMessage("Error: " + e.getMessage());
+            response.setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR.value());
+            response.setMessage("Error retrieving available rooms: " + e.getMessage());
         }
 
         return response;
-    }
-
-    // Utility method for saving image URL (can be customized based on how you're storing images)
-    private String saveImageUrl(MultipartFile photo) {
-        // You could implement logic to save the image URL or validate the image here.
-        // If you're storing the URL directly, this could be just a return of the URL after saving the photo.
-        return "https://example.com/path/to/uploaded-image.jpg"; // You can replace this with actual logic for saving and returning the URL
     }
 }
