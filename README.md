@@ -3,3 +3,8 @@ The  Hotel Sokos Management and Booking System is a Spring Boot application desi
 
 Database schema diagram
 ![image](https://github.com/user-attachments/assets/18a1e49b-d103-4433-9902-db08be20e7bb)
+
+
+
+
+Thesis Work oN hOLD
