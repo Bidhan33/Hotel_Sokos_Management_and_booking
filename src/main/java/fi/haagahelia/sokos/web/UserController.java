@@ -1,4 +1,4 @@
-package fi.haagahelia.sokos.web;
+/* package fi.haagahelia.sokos.web;
 
 import fi.haagahelia.sokos.model.ResponseModel;
 import fi.haagahelia.sokos.service.interfac.IUserService;
@@ -64,3 +64,4 @@ public class UserController {
         }
     }
 }
+    */
