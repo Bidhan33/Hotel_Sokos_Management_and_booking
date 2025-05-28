@@ -30,7 +30,7 @@ public class BookingService implements IBookingService {
     private UserRepository userRepository;
 
     @Override
-    public ResponseModel saveBooking(String roomId, String userId, Booking bookingRequest) {
+    public ResponseModel saveBooking(Long roomId, Long userId, Booking bookingRequest) {
         ResponseModel response = new ResponseModel();
 
         try {
@@ -45,11 +45,20 @@ public class BookingService implements IBookingService {
                 throw new Exception("Check-out date must be after check-in date");
             }
 
+            // Validate guest numbers
+            if (bookingRequest.getNumOfAdults() < 1) {
+                throw new Exception("At least one adult is required for booking");
+            }
+            
+            if (bookingRequest.getNumOfChildren() < 0) {
+                throw new Exception("Number of children cannot be negative");
+            }
+
             // Get room and user
-            Room room = roomRepository.findById(Long.valueOf(roomId))
+            Room room = roomRepository.findById(roomId)
                     .orElseThrow(() -> new Exception("Room not found"));
                     
-            User user = userRepository.findById(Long.valueOf(userId))
+            User user = userRepository.findById(userId)
                     .orElseThrow(() -> new Exception("User not found"));
 
             // Check if room is available for requested dates
@@ -70,6 +79,7 @@ public class BookingService implements IBookingService {
             bookingRequest.setBookingConfirmationCode(bookingCode);
             bookingRequest.setRoom(room);
             bookingRequest.setUser(user);
+            // Note: totalNumOfGuest will be calculated automatically by @PrePersist/@PreUpdate
             
             // Save booking
             Booking savedBooking = bookingRepository.save(bookingRequest);

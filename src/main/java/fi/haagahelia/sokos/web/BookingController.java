@@ -23,7 +23,7 @@ public class BookingController {
                                                      @RequestBody Booking bookingRequest) {
 
         // Call the service layer to save the booking
-        ResponseModel response = bookingService.saveBooking(roomId, userId, bookingRequest);
+        ResponseModel response = bookingService.saveBooking(Long.valueOf(roomId), Long.valueOf(userId), bookingRequest);
         return ResponseEntity.status(response.getStatusCode()).body(response);
     }
 
