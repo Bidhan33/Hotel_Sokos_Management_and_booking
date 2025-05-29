@@ -1,4 +1,4 @@
-package fi.haagahelia.sokos.utils;
+/* package fi.haagahelia.sokos.utils;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
